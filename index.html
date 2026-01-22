@@ -1,0 +1,1368 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bill Payment Statement Manager</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background: #f5f5f5;
+            padding: 10px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            padding: 15px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+
+        @media (max-width: 599px) {
+            button {
+                flex: 1;
+                min-width: 150px;
+            }
+        }
+
+        .btn-primary {
+            background: #2563eb;
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: #1d4ed8;
+        }
+
+        .btn-success {
+            background: #10b981;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #059669;
+        }
+
+        .btn-danger {
+            background: #ef4444;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        .btn-small {
+            padding: 6px 12px;
+            font-size: 12px;
+            min-width: auto;
+            flex: 0;
+        }
+
+        .statements-list {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+
+        .statement-card {
+            border: 1px solid #e5e7eb;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .statement-header {
+            background: #000;
+            color: white;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .bill-number {
+            font-size: 12px;
+            margin-bottom: 8px;
+        }
+
+        .company-name {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin-bottom: 5px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            font-family: 'Georgia', serif;
+        }
+
+        .statement-title {
+            font-size: 1rem;
+            font-weight: 600;
+        }
+
+        .table-container {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .statement-table {
+            width: 100%;
+            border-collapse: collapse;
+            min-width: 800px;
+        }
+
+        .statement-table th,
+        .statement-table td {
+            border: 1px solid #000;
+            padding: 8px;
+            text-align: left;
+            font-size: 12px;
+        }
+
+        .statement-table th {
+            background: #000;
+            color: white;
+            font-weight: 600;
+        }
+
+        .statement-table td {
+            background: white;
+        }
+
+        .statement-actions {
+            padding: 15px;
+            background: #f9fafb;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .statement-actions button {
+            min-width: 130px;
+        }
+
+        .btn-info {
+            background: #0891b2;
+            color: white;
+        }
+
+        .btn-info:hover {
+            background: #0e7490;
+        }
+
+        .btn-delete-row {
+            background: #ef4444;
+            color: white;
+            padding: 4px 8px;
+            font-size: 11px;
+            border-radius: 3px;
+            cursor: pointer;
+        }
+
+        .btn-delete-row:hover {
+            background: #dc2626;
+        }
+
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            overflow-y: auto;
+        }
+
+        .modal.active {
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+            padding: 10px;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            max-width: 900px;
+            width: 100%;
+            margin: 20px auto;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-header h2 {
+            color: #333;
+            font-size: 1.25rem;
+        }
+
+        .close-btn {
+            background: none;
+            border: none;
+            font-size: 28px;
+            cursor: pointer;
+            color: #666;
+            padding: 0;
+            width: 30px;
+            height: 30px;
+            flex-shrink: 0;
+        }
+
+        .close-btn:hover {
+            color: #000;
+        }
+
+        .form-group {
+            margin-bottom: 15px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+            font-size: 14px;
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #d1d5db;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+        }
+
+        .entries-section {
+            margin-top: 20px;
+        }
+
+        .entry-card {
+            border: 1px solid #e5e7eb;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            background: #f9fafb;
+        }
+
+        .entry-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+
+        .entry-header h4 {
+            color: #333;
+            font-size: 1rem;
+        }
+
+        .challan-section {
+            margin-top: 15px;
+            padding: 15px;
+            background: white;
+            border-radius: 5px;
+        }
+
+        .challan-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .challan-group input {
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .total-section {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f3f4f6;
+            border-radius: 5px;
+        }
+
+        .total-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 10px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        @media (min-width: 600px) {
+            body {
+                padding: 20px;
+            }
+
+            .container {
+                padding: 25px;
+            }
+
+            h1 {
+                font-size: 2rem;
+                margin-bottom: 30px;
+            }
+
+            .company-name {
+                font-size: 2rem;
+            }
+
+            .statement-header {
+                padding: 20px;
+            }
+
+            .form-row {
+                grid-template-columns: repeat(2, 1fr);
+            }
+
+            .statement-table th,
+            .statement-table td {
+                padding: 10px;
+                font-size: 13px;
+            }
+
+            .modal-content {
+                padding: 30px;
+            }
+
+            .modal-header h2 {
+                font-size: 1.5rem;
+            }
+        }
+
+        @media (min-width: 1024px) {
+            .container {
+                padding: 30px;
+            }
+
+            .company-name {
+                font-size: 2.5rem;
+                letter-spacing: 2px;
+            }
+
+            .statement-table th,
+            .statement-table td {
+                padding: 12px;
+                font-size: 14px;
+            }
+
+            .total-row {
+                font-size: 16px;
+            }
+        }
+
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+
+            .container {
+                box-shadow: none;
+            }
+
+            .button-group,
+            .statement-actions,
+            .btn-delete-row {
+                display: none;
+            }
+        }
+    </style>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+</head>
+
+<body>
+    <div class="container">
+        <h1>📋 Bill Payment Statement Manager</h1>
+
+        <div class="button-group">
+            <button class="btn-primary" onclick="openModal()">+ New Statement</button>
+            <button class="btn-success" onclick="exportToExcel()">📥 Export to Excel</button>
+            <button class="btn-success" onclick="exportToGoogleSheets()">📊 Export to Google Sheets</button>
+        </div>
+
+        <div id="statementsList" class="statements-list"></div>
+    </div>
+
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Create New Statement</h2>
+                <button class="close-btn" onclick="closeModal()">&times;</button>
+            </div>
+
+            <div class="form-group">
+                <label>Bill Number</label>
+                <input type="text" id="billNumber" placeholder="e.g., CEOL-0925-001">
+            </div>
+
+            <div class="form-group">
+                <label>Company Name</label>
+                <input type="text" id="companyName" placeholder="e.g., City Edible Oil Limited">
+            </div>
+
+            <div class="entries-section">
+                <div
+                    style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; flex-wrap: wrap; gap: 10px;">
+                    <h3 style="font-size: 1.125rem;">Entries</h3>
+                    <button class="btn-primary btn-small" onclick="addEntry()">+ Add Entry</button>
+                </div>
+                <div id="entriesContainer"></div>
+            </div>
+
+            <div class="total-section">
+                <div class="total-row">
+                    <span>Total Tonnage:</span>
+                    <span id="totalTonnage">0</span>
+                </div>
+                <div class="total-row">
+                    <span>Total Amount:</span>
+                    <span id="totalAmount">0</span>
+                </div>
+            </div>
+
+            <div class="button-group" style="margin-top: 20px;">
+                <button class="btn-success" onclick="saveStatement()">💾 Save Statement</button>
+                <button class="btn-danger" onclick="closeModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+
+        var statements = [];
+        var currentStatementId = null;
+        var entryCounter = 0;
+        var actionHistory = [];
+        var actionIndex = -1;
+
+        
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycby6waCXfRonSeB0aY5IGamzL2-K_wXLNr5lDUiGv25-cK1VYSdO9HjgeBHU_WQMlt1dsg/exec";
+
+        function getTodayDate() {
+            var today = new Date();
+            var yyyy = today.getFullYear();
+            var mm = String(today.getMonth() + 1).padStart(2, '0');
+            var dd = String(today.getDate()).padStart(2, '0');
+            return yyyy + '-' + mm + '-' + dd;
+        }
+
+        function showNotification(message, type) {
+            var notification = document.createElement('div');
+            notification.style.cssText = 'position:fixed;top:20px;right:20px;background:' + (type === 'success' ? '#10b981' : '#ef4444') + ';color:white;padding:15px 20px;border-radius:5px;z-index:10000;box-shadow:0 4px 12px rgba(0,0,0,0.15);font-weight:600;';
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            setTimeout(() => { notification.remove(); }, 4000);
+        }
+
+        function saveDraft() {
+            var billNumber = document.getElementById('billNumber').value.trim();
+            var companyName = document.getElementById('companyName').value.trim();
+            var entriesContainer = document.getElementById('entriesContainer');
+            if (billNumber && companyName && entriesContainer) {
+                var draft = {
+                    billNumber: billNumber,
+                    companyName: companyName,
+                    entriesHtml: entriesContainer.innerHTML,
+                    timestamp: new Date().getTime()
+                };
+                localStorage.setItem('billStatementDraft', JSON.stringify(draft));
+            }
+        }
+
+        function loadDraft() {
+            var draft = localStorage.getItem('billStatementDraft');
+            if (draft) {
+                var data = JSON.parse(draft);
+                if (new Date().getTime() - data.timestamp < 3600000) {
+                    if (confirm('Restore unsaved draft from ' + new Date(data.timestamp).toLocaleString() + '?')) {
+                        document.getElementById('billNumber').value = data.billNumber;
+                        document.getElementById('companyName').value = data.companyName;
+                        document.getElementById('entriesContainer').innerHTML = data.entriesHtml;
+                        calculateTotal();
+                    } else {
+                        localStorage.removeItem('billStatementDraft');
+                    }
+                } else {
+                    localStorage.removeItem('billStatementDraft');
+                }
+            }
+        }
+
+        function loadData() {
+            var saved = localStorage.getItem('billStatements');
+            if (saved) {
+                statements = JSON.parse(saved);
+            } else {
+                statements = [
+                    {
+                        id: 1,
+                        billNumber: 'CEOL-0925-001',
+                        companyName: 'City Edible Oil Limited',
+                        entries: [
+                            {
+                                date: '01/09/2025',
+                                challans: ['5011036'],
+                                customerName: 'Matri Store',
+                                dbPoint: 'Dariapara Road, Jollarpar',
+                                driverName: 'Emon',
+                                truckNumber: '11-0255',
+                                ton: 3,
+                                uploadPoint: '1',
+                                totalAmount: 1300
+                            },
+                            {
+                                date: '01/09/2025',
+                                challans: ['5011041', '5011040', '5011039'],
+                                customerName: 'Shah Paran Traders',
+                                dbPoint: 'Shibganj, Lakripara',
+                                driverName: 'Selim',
+                                truckNumber: '11-1419',
+                                ton: 5.5,
+                                uploadPoint: '1',
+                                totalAmount: 2500
+                            },
+                        ]
+                    }
+                ];
+                saveData();
+            }
+        }
+
+        function saveData() {
+            localStorage.setItem('billStatements', JSON.stringify(statements));
+        }
+
+        function renderStatements() {
+            var container = document.getElementById('statementsList');
+            container.innerHTML = '';
+
+            for (var i = 0; i < statements.length; i++) {
+                var statement = statements[i];
+                var card = document.createElement('div');
+                card.className = 'statement-card';
+
+                // Calculate Totals for display
+                let totalTon = statement.entries.reduce((sum, entry) => sum + entry.ton, 0);
+                let totalAmount = statement.entries.reduce((sum, entry) => sum + entry.totalAmount, 0);
+
+
+                var header = '<div class="statement-header">';
+                header += '<div class="bill-number">' + statement.billNumber + '</div>';
+                header += '<div class="company-name">' + statement.companyName + '</div>';
+                header += '<div class="statement-title">Bill Payment Statement (Total Ton: ' + totalTon.toFixed(2) + ' / Total Amount: ' + totalAmount.toFixed(2) + ')</div>';
+                header += '</div>';
+
+                var table = '<div class="table-container"><table class="statement-table">';
+                table += '<thead><tr>';
+                table += '<th>SL</th>';
+                table += '<th>Date</th>';
+                table += '<th>Challan Number</th>';
+                table += '<th>Customer\'s Name</th>';
+                table += '<th>DB Point</th>';
+                table += '<th>Driver Name</th>';
+                table += '<th>Truck Number</th>';
+                table += '<th>Ton</th>';
+                table += '<th>Upload Point</th>';
+                table += '<th>Total Amount</th>';
+                table += '<th>Action</th>';
+                table += '</tr></thead><tbody>';
+
+                for (var j = 0; j < statement.entries.length; j++) {
+                    var entry = statement.entries[j];
+                    table += '<tr>';
+                    table += '<td>' + (j + 1) + '</td>';
+                    table += '<td>' + entry.date + '</td>';
+                    table += '<td>' + entry.challans.join('<br>') + '</td>';
+                    table += '<td>' + entry.customerName + '</td>';
+                    table += '<td>' + entry.dbPoint + '</td>';
+                    table += '<td>' + entry.driverName + '</td>';
+                    table += '<td>' + entry.truckNumber + '</td>';
+                    table += '<td>' + entry.ton + '</td>';
+                    table += '<td>' + entry.uploadPoint + '</td>';
+                    table += '<td>' + entry.totalAmount + '</td>';
+                    table += '<td><button class="btn-delete-row" onclick="deleteRow(' + statement.id + ', ' + j + ')">Delete</button></td>';
+                    table += '</tr>';
+                }
+
+                table += '</tbody></table></div>';
+
+                var actions = '<div class="statement-actions">';
+                actions += '<button class="btn-info btn-small" onclick="downloadPDF(' + statement.id + ')">📄 Save as PDF</button>';
+                actions += '<button class="btn-primary btn-small" onclick="editStatement(' + statement.id + ')">✏️ Edit</button>';
+                actions += '<button class="btn-danger btn-small" onclick="deleteStatement(' + statement.id + ')">🗑️ Delete Statement</button>';
+                actions += '</div>';
+
+                card.innerHTML = header + table + actions;
+                container.appendChild(card);
+            }
+        }
+
+        function deleteRow(statementId, rowIndex) {
+            if (confirm('Are you sure you want to delete this row? This change will be permanent after saving.')) {
+                for (var i = 0; i < statements.length; i++) {
+                    if (statements[i].id === statementId) {
+                        statements[i].entries.splice(rowIndex, 1);
+
+                        // If all entries are gone, delete the whole statement card
+                        if (statements[i].entries.length === 0) {
+                            statements.splice(i, 1);
+                        }
+                        break;
+                    }
+                }
+                saveData();
+                renderStatements();
+            }
+        }
+
+        function openModal() {
+            currentStatementId = null;
+            document.getElementById('modalTitle').textContent = 'Create New Statement';
+            document.getElementById('billNumber').value = '';
+            document.getElementById('companyName').value = '';
+            document.getElementById('entriesContainer').innerHTML = '';
+            entryCounter = 0;
+            addEntry();
+            document.getElementById('modal').className = 'modal active';
+            loadDraft();
+            setTimeout(() => { document.getElementById('billNumber').focus(); }, 100);
+        }
+
+        function closeModal() {
+            document.getElementById('modal').className = 'modal';
+            saveDraft();
+        }
+
+        setInterval(saveDraft, 30000);
+
+        function addEntry() {
+            entryCounter++;
+            var container = document.getElementById('entriesContainer');
+            var entryDiv = document.createElement('div');
+            entryDiv.className = 'entry-card';
+            entryDiv.id = 'entry-' + entryCounter;
+
+            var html = '<div class="entry-header">';
+            html += '<h4>Entry ' + entryCounter + '</h4>';
+            html += '<button class="btn-danger btn-small" onclick="removeEntry(' + entryCounter + ')">Remove</button>';
+            html += '</div>';
+
+            html += '<div class="form-row">';
+            html += '<div class="form-group">';
+            html += '<label>Date</label>';
+            html += '<input type="date" class="entry-date" value="' + getTodayDate() + '">';
+            html += '</div>';
+            html += '<div class="form-group">';
+            html += '<label>Customer Name</label>';
+            html += '<input type="text" class="entry-customer" placeholder="Customer name">';
+            html += '</div>';
+            html += '</div>';
+
+            html += '<div class="form-row">';
+            html += '<div class="form-group">';
+            html += '<label>DB Point</label>';
+            html += '<input type="text" class="entry-dbpoint" placeholder="Delivery point">';
+            html += '</div>';
+            html += '<div class="form-group">';
+            html += '<label>Driver Name</label>';
+            html += '<input type="text" class="entry-driver" placeholder="Driver name">';
+            html += '</div>';
+            html += '</div>';
+
+            html += '<div class="form-row">';
+            html += '<div class="form-group">';
+            html += '<label>Truck Number</label>';
+            html += '<input type="text" class="entry-truck" placeholder="Truck number">';
+            html += '</div>';
+            html += '<div class="form-group">';
+            html += '<label>Tonnage</label>';
+            html += '<input type="number" step="0.1" class="entry-ton" placeholder="0" onchange="calculateTotal()">';
+            html += '</div>';
+            html += '</div>';
+
+            html += '<div class="form-row">';
+            html += '<div class="form-group">';
+            html += '<label>Upload Point</label>';
+            html += '<input type="text" class="entry-upload" value="1">';
+            html += '</div>';
+            html += '<div class="form-group">';
+            html += '<label>Total Amount</label>';
+            html += '<input type="number" class="entry-amount" placeholder="0" onchange="calculateTotal()">';
+            html += '</div>';
+            html += '</div>';
+
+            html += '<div class="challan-section">';
+            html += '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 10px;">';
+            html += '<label style="margin: 0; font-size: 14px; font-weight: 600;">Challan Numbers</label>';
+            html += '<button class="btn-primary btn-small" onclick="addChallan(' + entryCounter + ')">+ Add Challan</button>';
+            html += '</div>';
+            html += '<div class="challans-container"></div>';
+            html += '</div>';
+
+            entryDiv.innerHTML = html;
+            container.appendChild(entryDiv);
+
+            addChallan(entryCounter);
+        }
+
+        function removeEntry(id) {
+            var entry = document.getElementById('entry-' + id);
+            if (entry) {
+                entry.remove();
+                calculateTotal();
+            }
+        }
+
+        function addChallan(entryId) {
+            var entry = document.getElementById('entry-' + entryId);
+            var container = entry.querySelector('.challans-container');
+
+            var challanDiv = document.createElement('div');
+            challanDiv.className = 'challan-group';
+
+            var input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'challan-input';
+            input.placeholder = 'Challan number';
+            input.addEventListener('keypress', function (e) {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    addChallan(entryId);
+                    setTimeout(() => {
+                        var allInputs = document.querySelectorAll('#entry-' + entryId + ' .challan-input');
+                        if (allInputs.length > 0) allInputs[allInputs.length - 1].focus();
+                    }, 0);
+                }
+            });
+            setTimeout(() => { input.focus(); }, 0);
+
+            var removeBtn = document.createElement('button');
+            removeBtn.className = 'btn-danger btn-small';
+            removeBtn.textContent = 'Remove';
+            removeBtn.onclick = function () {
+                challanDiv.remove();
+            };
+
+            challanDiv.appendChild(input);
+            challanDiv.appendChild(removeBtn);
+            container.appendChild(challanDiv);
+        }
+
+        function validateEntry(card) {
+            var date = card.querySelector('.entry-date').value;
+            var customer = card.querySelector('.entry-customer').value.trim();
+            var ton = card.querySelector('.entry-ton').value;
+            var amount = card.querySelector('.entry-amount').value;
+            var errors = [];
+
+            if (!date) errors.push('Date is required');
+            if (!customer) errors.push('Customer Name is required');
+            if (ton && isNaN(ton)) errors.push('Ton must be a number');
+            if (amount && isNaN(amount)) errors.push('Amount must be a number');
+
+            return errors;
+        }
+
+        function calculateTotal() {
+            var totalTon = 0;
+            var totalAmount = 0;
+            var entries = document.querySelectorAll('.entry-card');
+
+            for (var i = 0; i < entries.length; i++) {
+                var tonInput = entries[i].querySelector('.entry-ton');
+                var amountInput = entries[i].querySelector('.entry-amount');
+
+                var ton = parseFloat(tonInput ? tonInput.value : '0') || 0;
+                var amount = parseFloat(amountInput ? amountInput.value : '0') || 0;
+
+                totalTon += ton;
+                totalAmount += amount;
+            }
+
+            document.getElementById('totalTonnage').textContent = totalTon.toFixed(2);
+            document.getElementById('totalAmount').textContent = totalAmount.toFixed(2);
+        }
+
+        function saveStatement() {
+            var billNumber = document.getElementById('billNumber').value.trim();
+            var companyName = document.getElementById('companyName').value.trim();
+
+            if (!billNumber || !companyName) {
+                showNotification('Please fill in Bill Number and Company Name.', 'error');
+                return;
+            }
+
+            var entries = [];
+            var entryCards = document.querySelectorAll('.entry-card');
+            var customers = {};
+            var validationErrors = [];
+
+            for (var i = 0; i < entryCards.length; i++) {
+                var card = entryCards[i];
+                var errors = validateEntry(card);
+                if (errors.length > 0) {
+                    validationErrors.push('Entry ' + (i + 1) + ': ' + errors.join(', '));
+                }
+
+                var challans = [];
+                var challanInputs = card.querySelectorAll('.challan-input');
+                var challanSet = new Set();
+
+                for (var j = 0; j < challanInputs.length; j++) {
+                    var challanValue = challanInputs[j].value.trim();
+                    if (challanValue) {
+                        if (challanSet.has(challanValue)) {
+                            validationErrors.push('Entry ' + (i + 1) + ': Duplicate challan "' + challanValue + '"');
+                        } else {
+                            challans.push(challanValue);
+                            challanSet.add(challanValue);
+                        }
+                    }
+                }
+
+                // Skip entry if required fields are missing
+                if (!card.querySelector('.entry-date').value || !challans.length) {
+                    continue;
+                }
+
+                var customerKey = card.querySelector('.entry-customer').value.trim() + '|' + card.querySelector('.entry-date').value;
+                if (customers[customerKey]) {
+                    validationErrors.push('Duplicate entry detected: ' + card.querySelector('.entry-customer').value + ' on ' + card.querySelector('.entry-date').value);
+                } else {
+                    customers[customerKey] = true;
+                }
+
+                var dateInput = card.querySelector('.entry-date').value;
+                var dateParts = dateInput.split('-');
+                var formattedDate = dateParts[2] + '/' + dateParts[1] + '/' + dateParts[0];
+
+                var entry = {
+                    date: formattedDate,
+                    challans: challans,
+                    customerName: card.querySelector('.entry-customer').value,
+                    dbPoint: card.querySelector('.entry-dbpoint').value,
+                    driverName: card.querySelector('.entry-driver').value,
+                    truckNumber: card.querySelector('.entry-truck').value,
+                    ton: parseFloat(card.querySelector('.entry-ton').value) || 0,
+                    uploadPoint: card.querySelector('.entry-upload').value,
+                    totalAmount: parseFloat(card.querySelector('.entry-amount').value) || 0
+                };
+
+                entries.push(entry);
+            }
+
+            if (validationErrors.length > 0) {
+                showNotification('Validation errors: ' + validationErrors.join(' | '), 'error');
+                return;
+            }
+
+            if (entries.length === 0) {
+                showNotification('Please add at least one complete entry (Date and Challan Number).', 'error');
+                return;
+            }
+
+            // Clear draft on successful validation
+            localStorage.removeItem('billStatementDraft');
+
+            // 1. Local Storage Logic (Save/Update)
+            if (currentStatementId) {
+                for (var i = 0; i < statements.length; i++) {
+                    if (statements[i].id === currentStatementId) {
+                        statements[i].billNumber = billNumber;
+                        statements[i].companyName = companyName;
+                        statements[i].entries = entries;
+                        break;
+                    }
+                }
+            } else {
+                var newId = statements.length > 0 ? Math.max.apply(Math, statements.map(function (s) { return s.id; })) + 1 : 1;
+                statements.push({
+                    id: newId,
+                    billNumber: billNumber,
+                    companyName: companyName,
+                    entries: entries
+                });
+            }
+
+            saveData();
+            showNotification('Statement saved locally.', 'success');
+
+
+            closeModal();
+            renderStatements();
+        }
+
+        function editStatement(id) {
+            var statement = statements.find(s => s.id === id);
+
+            if (!statement) return;
+
+            currentStatementId = id;
+            document.getElementById('modalTitle').textContent = 'Edit Statement';
+            document.getElementById('billNumber').value = statement.billNumber;
+            document.getElementById('companyName').value = statement.companyName;
+
+            document.getElementById('entriesContainer').innerHTML = '';
+            entryCounter = 0;
+
+            for (var i = 0; i < statement.entries.length; i++) {
+                var entry = statement.entries[i];
+                entryCounter++;
+
+                var container = document.getElementById('entriesContainer');
+                var entryDiv = document.createElement('div');
+                entryDiv.className = 'entry-card';
+                entryDiv.id = 'entry-' + entryCounter;
+
+                var displayDate = entry.date.split('/').reverse().join('-');
+
+                var html = '<div class="entry-header">';
+                html += '<h4>Entry ' + entryCounter + '</h4>';
+                html += '<button class="btn-danger btn-small" onclick="removeEntry(' + entryCounter + ')">Remove</button>';
+                html += '</div>';
+
+                html += '<div class="form-row">';
+                html += '<div class="form-group">';
+                html += '<label>Date</label>';
+                html += '<input type="date" class="entry-date" value="' + displayDate + '">';
+                html += '</div>';
+                html += '<div class="form-group">';
+                html += '<label>Customer Name</label>';
+                html += '<input type="text" class="entry-customer" value="' + entry.customerName + '">';
+                html += '</div>';
+                html += '</div>';
+
+                html += '<div class="form-row">';
+                html += '<div class="form-group">';
+                html += '<label>DB Point</label>';
+                html += '<input type="text" class="entry-dbpoint" value="' + entry.dbPoint + '">';
+                html += '</div>';
+                html += '<div class="form-group">';
+                html += '<label>Driver Name</label>';
+                html += '<input type="text" class="entry-driver" value="' + entry.driverName + '">';
+                html += '</div>';
+                html += '</div>';
+
+                html += '<div class="form-row">';
+                html += '<div class="form-group">';
+                html += '<label>Truck Number</label>';
+                html += '<input type="text" class="entry-truck" value="' + entry.truckNumber + '">';
+                html += '</div>';
+                html += '<div class="form-group">';
+                html += '<label>Tonnage</label>';
+                html += '<input type="number" step="0.1" class="entry-ton" value="' + entry.ton + '" onchange="calculateTotal()">';
+                html += '</div>';
+                html += '</div>';
+
+                html += '<div class="form-row">';
+                html += '<div class="form-group">';
+                html += '<label>Upload Point</label>';
+                html += '<input type="text" class="entry-upload" value="' + entry.uploadPoint + '">';
+                html += '</div>';
+                html += '<div class="form-group">';
+                html += '<label>Total Amount</label>';
+                html += '<input type="number" class="entry-amount" value="' + entry.totalAmount + '" onchange="calculateTotal()">';
+                html += '</div>';
+                html += '</div>';
+
+                html += '<div class="challan-section">';
+                html += '<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 10px;">';
+                html += '<label style="margin: 0; font-size: 14px; font-weight: 600;">Challan Numbers</label>';
+                html += '<button class="btn-primary btn-small" onclick="addChallan(' + entryCounter + ')">+ Add Challan</button>';
+                html += '</div>';
+                html += '<div class="challans-container"></div>';
+                html += '</div>';
+
+                entryDiv.innerHTML = html;
+                container.appendChild(entryDiv);
+
+                var challansContainer = entryDiv.querySelector('.challans-container');
+                for (var j = 0; j < entry.challans.length; j++) {
+                    var challanDiv = document.createElement('div');
+                    challanDiv.className = 'challan-group';
+
+                    var input = document.createElement('input');
+                    input.type = 'text';
+                    input.className = 'challan-input';
+                    input.value = entry.challans[j];
+
+                    var removeBtn = document.createElement('button');
+                    removeBtn.className = 'btn-danger btn-small';
+                    removeBtn.textContent = 'Remove';
+                    removeBtn.onclick = function () {
+                        challanDiv.remove();
+                    };
+
+                    challanDiv.appendChild(input);
+                    challanDiv.appendChild(removeBtn);
+                    challansContainer.appendChild(challanDiv);
+                }
+
+                // Ensure at least one blank challan input if none were loaded
+                if (entry.challans.length === 0) {
+                    addChallan(entryCounter);
+                }
+            }
+
+            calculateTotal();
+            document.getElementById('modal').className = 'modal active';
+        }
+
+        function deleteStatement(id) {
+            if (confirm('Are you sure you want to delete this ENTIRE statement? This will only remove it locally.')) {
+                var index = statements.findIndex(s => s.id === id);
+                if (index !== -1) {
+                    statements.splice(index, 1);
+                    saveData();
+                    renderStatements();
+                    alert("Statement deleted locally.");
+                }
+            }
+        }
+
+        function downloadPDF(id) {
+            // Triggers the browser's print dialog to save the statement view as a PDF
+            window.print();
+        }
+
+        function exportToExcel() {
+            if (!statements || statements.length === 0) {
+                showNotification('No statements found to export.', 'error');
+                return;
+            }
+
+            try {
+                // Create workbook and worksheet
+                const workbook = XLSX.utils.book_new();
+
+                // Prepare data for Excel
+                const excelData = [];
+
+                // Add headers
+                excelData.push([
+                    'Bill Number',
+                    'Company Name',
+                    'Date',
+                    'Challan Number',
+                    "Customer's Name",
+                    'DB Point',
+                    'Driver Name',
+                    'Truck Number',
+                    'Ton',
+                    'Upload Point',
+                    'Total Amount'
+                ]);
+
+                // Add all statement entries
+                for (let i = 0; i < statements.length; i++) {
+                    const statement = statements[i];
+
+                    for (let j = 0; j < statement.entries.length; j++) {
+                        const entry = statement.entries[j];
+
+                        excelData.push([
+                            statement.billNumber,
+                            statement.companyName,
+                            entry.date,
+                            entry.challans.join('\n'),
+                            entry.customerName,
+                            entry.dbPoint,
+                            entry.driverName,
+                            entry.truckNumber,
+                            entry.ton,
+                            entry.uploadPoint,
+                            entry.totalAmount
+                        ]);
+                    }
+                }
+
+                // Create worksheet from data
+                const worksheet = XLSX.utils.aoa_to_sheet(excelData);
+
+                // Set column widths
+                worksheet['!cols'] = [
+                    { wch: 15 },  // Bill Number
+                    { wch: 25 },  // Company Name
+                    { wch: 12 },  // Date
+                    { wch: 15 },  // Challan Number
+                    { wch: 20 },  // Customer's Name
+                    { wch: 25 },  // DB Point
+                    { wch: 15 },  // Driver Name
+                    { wch: 15 },  // Truck Number
+                    { wch: 10 },  // Ton
+                    { wch: 12 },  // Upload Point
+                    { wch: 12 }   // Total Amount
+                ];
+
+                // Apply styles to all cells (centered alignment)
+                const range = XLSX.utils.decode_range(worksheet['!ref']);
+
+                for (let row = range.s.r; row <= range.e.r; row++) {
+                    for (let col = range.s.c; col <= range.e.c; col++) {
+                        const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
+
+                        if (!worksheet[cellAddress]) continue;
+
+                        // Create cell style with center alignment
+                        worksheet[cellAddress].s = {
+                            alignment: {
+                                horizontal: 'center',
+                                vertical: 'center',
+                                wrapText: true
+                            },
+                            border: {
+                                top: { style: 'thin', color: { rgb: '000000' } },
+                                bottom: { style: 'thin', color: { rgb: '000000' } },
+                                left: { style: 'thin', color: { rgb: '000000' } },
+                                right: { style: 'thin', color: { rgb: '000000' } }
+                            }
+                        };
+
+                        // Make header row bold and with background color
+                        if (row === 0) {
+                            worksheet[cellAddress].s.font = { bold: true, color: { rgb: 'FFFFFF' } };
+                            worksheet[cellAddress].s.fill = {
+                                patternType: 'solid',
+                                fgColor: { rgb: '000000' }
+                            };
+                        }
+                    }
+                }
+
+                // Add worksheet to workbook
+                XLSX.utils.book_append_sheet(workbook, worksheet, 'Bill Statements');
+
+                // Generate filename with timestamp
+                const timestamp = new Date().toISOString().slice(0, 10);
+                const filename = 'Bill_Statements_' + timestamp + '.xlsx';
+
+                // Download the file
+                XLSX.writeFile(workbook, filename);
+
+                const totalEntries = statements.reduce((sum, s) => sum + s.entries.length, 0);
+                showNotification('✅ Exported ' + totalEntries + ' entries to Excel!', 'success');
+
+            } catch (error) {
+                console.error('Excel export error:', error);
+                showNotification('❌ Excel export failed: ' + error.message, 'error');
+            }
+        }
+
+        function exportStatementToExcel(statementId) {
+            const statement = statements.find(s => s.id === statementId);
+
+            if (!statement) {
+                showNotification('Statement not found.', 'error');
+                return;
+            }
+
+            try {
+                const workbook = XLSX.utils.book_new();
+                const excelData = [];
+
+                // Add headers
+                excelData.push([
+                    'Bill Number',
+                    'Company Name',
+                    'Date',
+                    'Challan Number',
+                    "Customer's Name",
+                    'DB Point',
+                    'Driver Name',
+                    'Truck Number',
+                    'Ton',
+                    'Upload Point',
+                    'Total Amount'
+                ]);
+
+                // Add entries for this statement only
+                for (let j = 0; j < statement.entries.length; j++) {
+                    const entry = statement.entries[j];
+
+                    excelData.push([
+                        statement.billNumber,
+                        statement.companyName,
+                        entry.date,
+                        entry.challans.join('\n'),
+                        entry.customerName,
+                        entry.dbPoint,
+                        entry.driverName,
+                        entry.truckNumber,
+                        entry.ton,
+                        entry.uploadPoint,
+                        entry.totalAmount
+                    ]);
+                }
+
+                const worksheet = XLSX.utils.aoa_to_sheet(excelData);
+
+                
+                worksheet['!cols'] = [
+                    { wch: 15 }, { wch: 25 }, { wch: 12 }, { wch: 15 },
+                    { wch: 20 }, { wch: 25 }, { wch: 15 }, { wch: 15 },
+                    { wch: 10 }, { wch: 12 }, { wch: 12 }
+                ];
+
+                // Apply center alignment and styles
+                const range = XLSX.utils.decode_range(worksheet['!ref']);
+
+                for (let row = range.s.r; row <= range.e.r; row++) {
+                    for (let col = range.s.c; col <= range.e.c; col++) {
+                        const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
+
+                        if (!worksheet[cellAddress]) continue;
+
+                        worksheet[cellAddress].s = {
+                            alignment: {
+                                horizontal: 'center',
+                                vertical: 'center',
+                                wrapText: true
+                            },
+                            border: {
+                                top: { style: 'thin', color: { rgb: '000000' } },
+                                bottom: { style: 'thin', color: { rgb: '000000' } },
+                                left: { style: 'thin', color: { rgb: '000000' } },
+                                right: { style: 'thin', color: { rgb: '000000' } }
+                            }
+                        };
+
+                        if (row === 0) {
+                            worksheet[cellAddress].s.font = { bold: true, color: { rgb: 'FFFFFF' } };
+                            worksheet[cellAddress].s.fill = {
+                                patternType: 'solid',
+                                fgColor: { rgb: '000000' }
+                            };
+                        }
+                    }
+                }
+
+                XLSX.utils.book_append_sheet(workbook, worksheet, 'Statement');
+
+                const filename = statement.billNumber.replace(/[^a-zA-Z0-9]/g, '_') + '.xlsx';
+                XLSX.writeFile(workbook, filename);
+
+                showNotification('✅ Exported ' + statement.billNumber + ' to Excel!', 'success');
+
+            } catch (error) {
+                console.error('Excel export error:', error);
+                showNotification('❌ Excel export failed: ' + error.message, 'error');
+            }
+        }
+
+
+        async function exportToGoogleSheets() {
+            if (!statements || statements.length === 0) {
+                showNotification('No statements found to export.', 'error');
+                return;
+            }
+
+            const exportBtn = document.querySelector('button[onclick="exportToGoogleSheets()"]');
+            const originalText = exportBtn.textContent;
+            exportBtn.textContent = '⏳ Exporting...';
+            exportBtn.disabled = true;
+
+            try {
+                const totalEntries = statements.reduce((total, statement) =>
+                    total + statement.entries.length, 0);
+
+                console.log('Exporting', totalEntries, 'entries from', statements.length, 'statements');
+                showNotification('Exporting ' + totalEntries + ' entries...', 'success');
+
+                // Create form data
+                const formData = new URLSearchParams();
+                formData.append('action', 'bulk');
+                formData.append('statements', JSON.stringify(statements));
+                formData.append('totalEntries', totalEntries);
+
+                // Send the request
+                const response = await fetch(WEB_APP_URL, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const text = await response.text();
+                console.log('Export response:', text);
+
+                if (text.includes('SUCCESS')) {
+                    showNotification('✅ Exported ' + totalEntries + ' entries successfully!', 'success');
+                } else if (text.includes('ERROR')) {
+                    const errorMsg = text.replace('ERROR: ', '');
+                    showNotification('❌ Export failed: ' + errorMsg, 'error');
+                } else {
+                    showNotification('Export completed. Please check your Google Sheet.', 'success');
+                }
+
+            } catch (error) {
+                console.error('Export failed:', error);
+                showNotification('❌ Export failed: ' + error.message, 'error');
+            } finally {
+                exportBtn.textContent = originalText;
+                exportBtn.disabled = false;
+            }
+        }
+
+
+        
+        window.onload = function () {
+            loadData();
+            renderStatements();
+            if (document.getElementById('modal').classList.contains('active')) {
+                calculateTotal();
+            }
+        };
+    </script>
+</body>
+
+</html>

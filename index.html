@@ -339,6 +339,16 @@
             font-weight: 600;
         }
 
+        /* Highlight for required fields */
+        .required-field {
+            position: relative;
+        }
+
+        .required-field label::after {
+            content: " *";
+            color: #ef4444;
+        }
+
         @media (min-width: 600px) {
             body {
                 padding: 20px;
@@ -447,9 +457,14 @@
                 <input type="text" id="billNumber" placeholder="e.g., CEOL-0925-001">
             </div>
 
-            <div class="form-group">
+            <div class="form-group required-field">
                 <label>Company Name</label>
-                <input type="text" id="companyName" placeholder="e.g., City Edible Oil Limited">
+                <select id="companyName">
+                    <option value="">-- Select Company --</option>
+                    <option value="Rupshi Feed Mills Ltd">Rupshi Feed Mills Ltd</option>
+                    <option value="Rupshi Foods Limited">Rupshi Foods Limited</option>
+                    <option value="City Edible Oil Ltd.">City Edible Oil Ltd.</option>
+                </select>
             </div>
 
             <div class="entries-section">
@@ -488,7 +503,14 @@
         var actionIndex = -1;
 
         
-        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycby6waCXfRonSeB0aY5IGamzL2-K_wXLNr5lDUiGv25-cK1VYSdO9HjgeBHU_WQMlt1dsg/exec";
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyGQ3Z_1K_c4A4gfvHBcJgt0R35xPlwq8bJY9-CHolEZu1ZJh2f8On2E_OlXTA4X7Y5xw/exec";
+
+        // Company mapping for sheet names
+        const COMPANY_SHEET_MAP = {
+            "Rupshi Feed Mills Ltd": "Rupshi Feed",
+            "Rupshi Foods Limited": "Rupshi Foods",
+            "City Edible Oil Ltd.": "City Edible Oil"
+        };
 
         function getTodayDate() {
             var today = new Date();
@@ -549,7 +571,7 @@
                     {
                         id: 1,
                         billNumber: 'CEOL-0925-001',
-                        companyName: 'City Edible Oil Limited',
+                        companyName: 'City Edible Oil Ltd.',
                         entries: [
                             {
                                 date: '01/09/2025',
@@ -1193,107 +1215,6 @@
 
                 const totalEntries = statements.reduce((sum, s) => sum + s.entries.length, 0);
                 showNotification('✅ Exported ' + totalEntries + ' entries to Excel!', 'success');
-
-            } catch (error) {
-                console.error('Excel export error:', error);
-                showNotification('❌ Excel export failed: ' + error.message, 'error');
-            }
-        }
-
-        function exportStatementToExcel(statementId) {
-            const statement = statements.find(s => s.id === statementId);
-
-            if (!statement) {
-                showNotification('Statement not found.', 'error');
-                return;
-            }
-
-            try {
-                const workbook = XLSX.utils.book_new();
-                const excelData = [];
-
-                // Add headers
-                excelData.push([
-                    'Bill Number',
-                    'Company Name',
-                    'Date',
-                    'Challan Number',
-                    "Customer's Name",
-                    'DB Point',
-                    'Driver Name',
-                    'Truck Number',
-                    'Ton',
-                    'Upload Point',
-                    'Total Amount'
-                ]);
-
-                // Add entries for this statement only
-                for (let j = 0; j < statement.entries.length; j++) {
-                    const entry = statement.entries[j];
-
-                    excelData.push([
-                        statement.billNumber,
-                        statement.companyName,
-                        entry.date,
-                        entry.challans.join('\n'),
-                        entry.customerName,
-                        entry.dbPoint,
-                        entry.driverName,
-                        entry.truckNumber,
-                        entry.ton,
-                        entry.uploadPoint,
-                        entry.totalAmount
-                    ]);
-                }
-
-                const worksheet = XLSX.utils.aoa_to_sheet(excelData);
-
-                
-                worksheet['!cols'] = [
-                    { wch: 15 }, { wch: 25 }, { wch: 12 }, { wch: 15 },
-                    { wch: 20 }, { wch: 25 }, { wch: 15 }, { wch: 15 },
-                    { wch: 10 }, { wch: 12 }, { wch: 12 }
-                ];
-
-                // Apply center alignment and styles
-                const range = XLSX.utils.decode_range(worksheet['!ref']);
-
-                for (let row = range.s.r; row <= range.e.r; row++) {
-                    for (let col = range.s.c; col <= range.e.c; col++) {
-                        const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
-
-                        if (!worksheet[cellAddress]) continue;
-
-                        worksheet[cellAddress].s = {
-                            alignment: {
-                                horizontal: 'center',
-                                vertical: 'center',
-                                wrapText: true
-                            },
-                            border: {
-                                top: { style: 'thin', color: { rgb: '000000' } },
-                                bottom: { style: 'thin', color: { rgb: '000000' } },
-                                left: { style: 'thin', color: { rgb: '000000' } },
-                                right: { style: 'thin', color: { rgb: '000000' } }
-                            }
-                        };
-
-                        if (row === 0) {
-                            worksheet[cellAddress].s.font = { bold: true, color: { rgb: 'FFFFFF' } };
-                            worksheet[cellAddress].s.fill = {
-                                patternType: 'solid',
-                                fgColor: { rgb: '000000' }
-                            };
-                        }
-                    }
-                }
-
-                XLSX.utils.book_append_sheet(workbook, worksheet, 'Statement');
-
-                const filename = statement.billNumber.replace(/[^a-zA-Z0-9]/g, '_') + '.xlsx';
-                XLSX.writeFile(workbook, filename);
-
-                showNotification('✅ Exported ' + statement.billNumber + ' to Excel!', 'success');
 
             } catch (error) {
                 console.error('Excel export error:', error);

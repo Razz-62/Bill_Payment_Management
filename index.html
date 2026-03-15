@@ -459,7 +459,7 @@
 
             <div class="form-group required-field">
                 <label>Company Name</label>
-                <select id="companyName">
+                <select id="companyName" onchange="onCompanyChange()">
                     <option value="">-- Select Company --</option>
                     <option value="Rupshi Feed Mills Ltd">Rupshi Feed Mills Ltd</option>
                     <option value="Rupshi Foods Limited">Rupshi Foods Limited</option>
@@ -503,7 +503,7 @@
         var actionIndex = -1;
 
         
-        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbyGQ3Z_1K_c4A4gfvHBcJgt0R35xPlwq8bJY9-CHolEZu1ZJh2f8On2E_OlXTA4X7Y5xw/exec";
+        const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbw6LjiQrGb3xMX_H--B9cywmWnBt_6zulILwwMQ0JB2GGpD0sgUDfjVw0USvwPumPXDEg/exec";
 
         // Company mapping for sheet names
         const COMPANY_SHEET_MAP = {
@@ -580,7 +580,7 @@
                                 dbPoint: 'Dariapara Road, Jollarpar',
                                 driverName: 'Emon',
                                 truckNumber: '11-0255',
-                                ton: 3,
+                                ton: '3',
                                 uploadPoint: '1',
                                 totalAmount: 1300
                             },
@@ -591,7 +591,7 @@
                                 dbPoint: 'Shibganj, Lakripara',
                                 driverName: 'Selim',
                                 truckNumber: '11-1419',
-                                ton: 5.5,
+                                ton: '5.5',
                                 uploadPoint: '1',
                                 totalAmount: 2500
                             },
@@ -615,8 +615,11 @@
                 var card = document.createElement('div');
                 card.className = 'statement-card';
 
-                // Calculate Totals for display
-                let totalTon = statement.entries.reduce((sum, entry) => sum + entry.ton, 0);
+                // Calculate Totals for display (handle both string and number ton values)
+                let totalTon = statement.entries.reduce((sum, entry) => {
+                    let tonValue = parseFloat(entry.ton) || 0;
+                    return sum + tonValue;
+                }, 0);
                 let totalAmount = statement.entries.reduce((sum, entry) => sum + entry.totalAmount, 0);
 
 
@@ -636,7 +639,18 @@
                 table += '<th>Driver Name</th>';
                 table += '<th>Truck Number</th>';
                 table += '<th>Ton</th>';
+                
+                // Add company-specific column headers
+                if (statement.companyName === 'Rupshi Feed Mills Ltd') {
+                    table += '<th>Floating</th>';
+                }
+                
                 table += '<th>Upload Point</th>';
+                
+                if (statement.companyName === 'Rupshi Foods Limited') {
+                    table += '<th>Solo / Group</th>';
+                }
+                
                 table += '<th>Total Amount</th>';
                 table += '<th>Action</th>';
                 table += '</tr></thead><tbody>';
@@ -652,7 +666,18 @@
                     table += '<td>' + entry.driverName + '</td>';
                     table += '<td>' + entry.truckNumber + '</td>';
                     table += '<td>' + entry.ton + '</td>';
+                    
+                    // Add company-specific data columns
+                    if (statement.companyName === 'Rupshi Feed Mills Ltd') {
+                        table += '<td>' + (entry.floating || '') + '</td>';
+                    }
+                    
                     table += '<td>' + entry.uploadPoint + '</td>';
+                    
+                    if (statement.companyName === 'Rupshi Foods Limited') {
+                        table += '<td>' + (entry.soloGroup || '') + '</td>';
+                    }
+                    
                     table += '<td>' + entry.totalAmount + '</td>';
                     table += '<td><button class="btn-delete-row" onclick="deleteRow(' + statement.id + ', ' + j + ')">Delete</button></td>';
                     table += '</tr>';
@@ -709,6 +734,104 @@
 
         setInterval(saveDraft, 30000);
 
+        function onCompanyChange() {
+            // Get all existing entries
+            var existingEntries = [];
+            var entryCards = document.querySelectorAll('.entry-card');
+            
+            // Save data from existing entries
+            for (var i = 0; i < entryCards.length; i++) {
+                var card = entryCards[i];
+                
+                var entry = {
+                    date: card.querySelector('.entry-date')?.value || '',
+                    customer: card.querySelector('.entry-customer')?.value || '',
+                    dbPoint: card.querySelector('.entry-dbpoint')?.value || '',
+                    driver: card.querySelector('.entry-driver')?.value || '',
+                    truck: card.querySelector('.entry-truck')?.value || '',
+                    ton: card.querySelector('.entry-ton')?.value || '',
+                    upload: card.querySelector('.entry-upload')?.value || '',
+                    amount: card.querySelector('.entry-amount')?.value || '',
+                    floating: card.querySelector('.entry-floating')?.value || '',
+                    soloGroup: card.querySelector('.entry-solo-group')?.value || '',
+                    challans: []
+                };
+                
+                // Get challans
+                var challanInputs = card.querySelectorAll('.challan-input');
+                for (var j = 0; j < challanInputs.length; j++) {
+                    if (challanInputs[j].value.trim()) {
+                        entry.challans.push(challanInputs[j].value.trim());
+                    }
+                }
+                
+                existingEntries.push(entry);
+            }
+            
+            // Clear and rebuild all entries with new company-specific fields
+            var container = document.getElementById('entriesContainer');
+            container.innerHTML = '';
+            entryCounter = 0;
+            
+            // Recreate entries with saved data
+            if (existingEntries.length > 0) {
+                for (var i = 0; i < existingEntries.length; i++) {
+                    addEntry();
+                    var card = document.getElementById('entry-' + entryCounter);
+                    
+                    // Restore values
+                    var entry = existingEntries[i];
+                    if (card.querySelector('.entry-date')) card.querySelector('.entry-date').value = entry.date;
+                    if (card.querySelector('.entry-customer')) card.querySelector('.entry-customer').value = entry.customer;
+                    if (card.querySelector('.entry-dbpoint')) card.querySelector('.entry-dbpoint').value = entry.dbPoint;
+                    if (card.querySelector('.entry-driver')) card.querySelector('.entry-driver').value = entry.driver;
+                    if (card.querySelector('.entry-truck')) card.querySelector('.entry-truck').value = entry.truck;
+                    if (card.querySelector('.entry-ton')) card.querySelector('.entry-ton').value = entry.ton;
+                    if (card.querySelector('.entry-upload')) card.querySelector('.entry-upload').value = entry.upload;
+                    if (card.querySelector('.entry-amount')) card.querySelector('.entry-amount').value = entry.amount;
+                    
+                    // Restore company-specific fields if they exist
+                    if (card.querySelector('.entry-floating')) card.querySelector('.entry-floating').value = entry.floating;
+                    if (card.querySelector('.entry-solo-group')) card.querySelector('.entry-solo-group').value = entry.soloGroup;
+                    
+                    // Restore challans
+                    var challansContainer = card.querySelector('.challans-container');
+                    challansContainer.innerHTML = '';
+                    
+                    if (entry.challans.length > 0) {
+                        for (var j = 0; j < entry.challans.length; j++) {
+                            var challanDiv = document.createElement('div');
+                            challanDiv.className = 'challan-group';
+                            
+                            var input = document.createElement('input');
+                            input.type = 'text';
+                            input.className = 'challan-input';
+                            input.value = entry.challans[j];
+                            
+                            var removeBtn = document.createElement('button');
+                            removeBtn.className = 'btn-danger btn-small';
+                            removeBtn.textContent = 'Remove';
+                            removeBtn.onclick = function () {
+                                challanDiv.remove();
+                            };
+                            
+                            challanDiv.appendChild(input);
+                            challanDiv.appendChild(removeBtn);
+                            challansContainer.appendChild(challanDiv);
+                        }
+                    } else {
+                        // Add at least one empty challan input
+                        addChallan(entryCounter);
+                    }
+                }
+            } else {
+                // No existing entries, just add one blank entry
+                addEntry();
+            }
+            
+            calculateTotal();
+        }
+
         function addEntry() {
             entryCounter++;
             var container = document.getElementById('entriesContainer');
@@ -750,19 +873,50 @@
             html += '</div>';
             html += '<div class="form-group">';
             html += '<label>Tonnage</label>';
-            html += '<input type="number" step="0.1" class="entry-ton" placeholder="0" onchange="calculateTotal()">';
+            html += '<input type="text" class="entry-ton" placeholder="0" onchange="calculateTotal()">';
             html += '</div>';
             html += '</div>';
 
+            // Get selected company to show company-specific fields
+            var selectedCompany = document.getElementById('companyName').value;
+
+            // Add Floating field for Rupshi Feed Mills Ltd
+            if (selectedCompany === 'Rupshi Feed Mills Ltd') {
+                html += '<div class="form-row">';
+                html += '<div class="form-group">';
+                html += '<label>Floating</label>';
+                html += '<input type="text" class="entry-floating" placeholder="Floating">';
+                html += '</div>';
+                html += '<div class="form-group">';
+                html += '<label>Upload Point</label>';
+                html += '<input type="text" class="entry-upload" value="1">';
+                html += '</div>';
+                html += '</div>';
+            } else {
+                html += '<div class="form-row">';
+                html += '<div class="form-group">';
+                html += '<label>Upload Point</label>';
+                html += '<input type="text" class="entry-upload" value="1">';
+                html += '</div>';
+                
+                // Add Solo/Group field for Rupshi Foods Limited
+                if (selectedCompany === 'Rupshi Foods Limited') {
+                    html += '<div class="form-group">';
+                    html += '<label>Solo / Group</label>';
+                    html += '<input type="text" class="entry-solo-group" placeholder="Solo or Group">';
+                    html += '</div>';
+                } else {
+                    html += '<div class="form-group"></div>'; // Empty for alignment
+                }
+                html += '</div>';
+            }
+
             html += '<div class="form-row">';
-            html += '<div class="form-group">';
-            html += '<label>Upload Point</label>';
-            html += '<input type="text" class="entry-upload" value="1">';
-            html += '</div>';
             html += '<div class="form-group">';
             html += '<label>Total Amount</label>';
             html += '<input type="number" class="entry-amount" placeholder="0" onchange="calculateTotal()">';
             html += '</div>';
+            html += '<div class="form-group"></div>'; // Empty for alignment
             html += '</div>';
 
             html += '<div class="challan-section">';
@@ -825,13 +979,11 @@
         function validateEntry(card) {
             var date = card.querySelector('.entry-date').value;
             var customer = card.querySelector('.entry-customer').value.trim();
-            var ton = card.querySelector('.entry-ton').value;
             var amount = card.querySelector('.entry-amount').value;
             var errors = [];
 
             if (!date) errors.push('Date is required');
             if (!customer) errors.push('Customer Name is required');
-            if (ton && isNaN(ton)) errors.push('Ton must be a number');
             if (amount && isNaN(amount)) errors.push('Amount must be a number');
 
             return errors;
@@ -917,10 +1069,21 @@
                     dbPoint: card.querySelector('.entry-dbpoint').value,
                     driverName: card.querySelector('.entry-driver').value,
                     truckNumber: card.querySelector('.entry-truck').value,
-                    ton: parseFloat(card.querySelector('.entry-ton').value) || 0,
+                    ton: card.querySelector('.entry-ton').value,  // Keep as string (alphanumeric)
                     uploadPoint: card.querySelector('.entry-upload').value,
                     totalAmount: parseFloat(card.querySelector('.entry-amount').value) || 0
                 };
+
+                // Add company-specific fields
+                var floatingInput = card.querySelector('.entry-floating');
+                if (floatingInput) {
+                    entry.floating = floatingInput.value;
+                }
+
+                var soloGroupInput = card.querySelector('.entry-solo-group');
+                if (soloGroupInput) {
+                    entry.soloGroup = soloGroupInput.value;
+                }
 
                 entries.push(entry);
             }
@@ -1024,19 +1187,46 @@
                 html += '</div>';
                 html += '<div class="form-group">';
                 html += '<label>Tonnage</label>';
-                html += '<input type="number" step="0.1" class="entry-ton" value="' + entry.ton + '" onchange="calculateTotal()">';
+                html += '<input type="text" class="entry-ton" value="' + entry.ton + '" onchange="calculateTotal()">';
                 html += '</div>';
                 html += '</div>';
 
+                // Add company-specific fields based on company
+                if (statement.companyName === 'Rupshi Feed Mills Ltd') {
+                    html += '<div class="form-row">';
+                    html += '<div class="form-group">';
+                    html += '<label>Floating</label>';
+                    html += '<input type="text" class="entry-floating" value="' + (entry.floating || '') + '">';
+                    html += '</div>';
+                    html += '<div class="form-group">';
+                    html += '<label>Upload Point</label>';
+                    html += '<input type="text" class="entry-upload" value="' + entry.uploadPoint + '">';
+                    html += '</div>';
+                    html += '</div>';
+                } else {
+                    html += '<div class="form-row">';
+                    html += '<div class="form-group">';
+                    html += '<label>Upload Point</label>';
+                    html += '<input type="text" class="entry-upload" value="' + entry.uploadPoint + '">';
+                    html += '</div>';
+                    
+                    if (statement.companyName === 'Rupshi Foods Limited') {
+                        html += '<div class="form-group">';
+                        html += '<label>Solo / Group</label>';
+                        html += '<input type="text" class="entry-solo-group" value="' + (entry.soloGroup || '') + '">';
+                        html += '</div>';
+                    } else {
+                        html += '<div class="form-group"></div>';
+                    }
+                    html += '</div>';
+                }
+
                 html += '<div class="form-row">';
-                html += '<div class="form-group">';
-                html += '<label>Upload Point</label>';
-                html += '<input type="text" class="entry-upload" value="' + entry.uploadPoint + '">';
-                html += '</div>';
                 html += '<div class="form-group">';
                 html += '<label>Total Amount</label>';
                 html += '<input type="number" class="entry-amount" value="' + entry.totalAmount + '" onchange="calculateTotal()">';
                 html += '</div>';
+                html += '<div class="form-group"></div>';
                 html += '</div>';
 
                 html += '<div class="challan-section">';
@@ -1112,7 +1302,7 @@
                 // Prepare data for Excel
                 const excelData = [];
 
-                // Add headers
+                // Add headers (13 columns now)
                 excelData.push([
                     'Bill Number',
                     'Company Name',
@@ -1124,7 +1314,9 @@
                     'Truck Number',
                     'Ton',
                     'Upload Point',
-                    'Total Amount'
+                    'Total Amount',
+                    'Floating',
+                    'Solo/Group'
                 ]);
 
                 // Add all statement entries
@@ -1145,7 +1337,9 @@
                             entry.truckNumber,
                             entry.ton,
                             entry.uploadPoint,
-                            entry.totalAmount
+                            entry.totalAmount,
+                            entry.floating || '',
+                            entry.soloGroup || ''
                         ]);
                     }
                 }
@@ -1165,7 +1359,9 @@
                     { wch: 15 },  // Truck Number
                     { wch: 10 },  // Ton
                     { wch: 12 },  // Upload Point
-                    { wch: 12 }   // Total Amount
+                    { wch: 12 },  // Total Amount
+                    { wch: 12 },  // Floating
+                    { wch: 12 }   // Solo/Group
                 ];
 
                 // Apply styles to all cells (centered alignment)
